@@ -1,0 +1,9 @@
+To compile the project, use command: 'g++ -std=c++11 project.cpp camera.cpp rtw_stb_image.cpp -o project' which creates an executable project
+
+My final scene should be ready to render, just execute: './project teapot.obj'
+
+You could substitute the teapot for any of my object files, but they all render in different size
+and positions so the user has to set the scene properly
+
+When I added the stb_image library, my makefile broke. I continually said I was going to fix it
+but I ran out of time.s
