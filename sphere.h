@@ -86,9 +86,8 @@
 // If your're reading this, you've found that I have two versions of the sphere class.
 // The below version was used thoughout the bulk of the project, and the above version
 // was used to render moving spheres. For some reason, intersections are not properly
-// recorded with off-center spheres in the above version. This bug pained me for the
-// entire week before the project was due but I could not find a viable solution. You can
-// see remmnants of my debugging sessions above.
+// recorded with off-center spheres in the above version. This bug pained me for many
+// hours but I could not find a viable solution; for now, moving blurry objects are depracated.
 //
 // ***
 

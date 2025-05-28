@@ -3,7 +3,7 @@
 
 #include "aabb.h"
 #include "hittable.h"
-#include "hittable_list.h"
+// #include "hittable_list.h"
 #include <algorithm> // For std::sort
 
 class bvh_node : public Hittable

@@ -31,18 +31,22 @@
 #include "material.h"
 
 // command to compile:
-//  g++ -std=c++11 project.cpp camera.cpp rtw_stb_image.cpp -o project
-//  ***
-//  As I was doing my final render I found that because there were objects surrounding the camera,
-//  each ray would hit the bvh. The renders began taking longer than usual, then I remembered I
-//  added each triangle from the hittable_list to the bvh separately, meaning that each ray had to
-//  be calculated log(n) times where n was the number of triangles. This didn't show up in earlier
-//  testing because some rays would miss the bvh. I tried for a quick solution but no luck
+//  g++ -std=c++11 project.cpp camera.cpp rtw_stb_image.cpp -o ray-tracer
 
-#define IW 480 // image width 240, 480, 960, 1920, 3840
+#define IW 3840 // image width 240, 480, 960, 1920, 3840
 int main(int argc, char *argv[])
 {
-  std::vector<Hittable *> hittables;
+  // Define Camera
+  vec3 camera_position(0.0, 4.0, 12.0);
+  vec3 look_at(0.0, 0.0, -1.0); // Looking towards the negative Z axis
+  vec3 up(0.0, -1.0, 0.0);      // this should be negative 1
+  double fov = 65.0;
+  int samples = 120;
+
+  // Set image width and height
+  int image_width = IW;
+  double aspectRatio = 16.0 / 9.0;
+  std::vector<Hittable *> scene;
 
   // define all commonly used colors
   color red(0.8, 0.0, 0.0);
@@ -92,29 +96,24 @@ int main(int argc, char *argv[])
   lambertian *blue_mat = new lambertian(blue_tex, 0.0);
   lambertian *green_mat = new lambertian(green_tex, 0.0);
 
-  hittables.push_back(new Sphere(vec3(-2.5, 5.0, -12.0), 5, earth_mat));
-  hittables.push_back(new Sphere(vec3(0.0, 0.8, 6.0), 0.8, basketball_mat));
-  hittables.push_back(new Sphere(vec3(6.0, 3.0, -8.0), 3, noise_mat));
-  hittables.push_back(new Sphere(vec3(4.5, 1.8, 4.0), 1.8, glass_mat));
-  hittables.push_back(new Sphere(vec3(-9.0, 3.5, -4.0), 3.5, metal_mat));
-  hittables.push_back(new Sphere(vec3(-3.5, 1.2, 5.0), 1.2, metal_2_mat));
-  hittables.push_back(new Sphere(vec3(-8.0, 4.5, 2.0), 1.5, light_mat));
-  hittables.push_back(new Sphere(vec3(-8.0, 1.5, 2.0), 1.5, checkered_2_mat));
-  hittables.push_back(new Sphere(vec3(12.0, 3.5, -4.0), 3.5, wall_mat));
+  // Set scene by adding objects
+  // Spheres are defined by (x, y, z), radius, material
+  scene.push_back(new Sphere(vec3(-2.5, 5.0, -12.0), 5, earth_mat));
+  scene.push_back(new Sphere(vec3(0.0, 0.8, 6.0), 0.8, basketball_mat));
+  scene.push_back(new Sphere(vec3(6.0, 3.0, -8.0), 3, noise_mat));
+  scene.push_back(new Sphere(vec3(4.5, 1.8, 4.0), 1.8, glass_mat));
+  scene.push_back(new Sphere(vec3(-9.0, 3.5, -4.0), 3.5, metal_mat));
+  scene.push_back(new Sphere(vec3(-3.5, 1.2, 5.0), 1.2, metal_2_mat));
+  scene.push_back(new Sphere(vec3(-8.0, 4.5, 2.0), 1.5, light_mat));
+  scene.push_back(new Sphere(vec3(-8.0, 1.5, 2.0), 1.5, checkered_2_mat));
+  scene.push_back(new Sphere(vec3(12.0, 3.5, -4.0), 3.5, wall_mat));
+  scene.push_back(new Sphere(vec3(0.0, -1000.0, 0.0), 1000, checkered_mat));
+  scene.push_back(new Sphere(vec3(10.0, 6, 20.0), 1.5, light_mat));
 
-  hittables.push_back(new Sphere(vec3(0.0, -1000.0, 0.0), 1000, checkered_mat));
-
-  hittables.push_back(new Sphere(vec3(10.0, 6, 20.0), 1.5, light_mat));
-
-  // vec3 centerA = vec3(3.0, 1.5, 0.0);
-  // vec3 centerB = vec3(3.0, 2.5, 0.0);
-  // hittables.push_back(new Sphere(centerA, centerB, 2, green_mat));
-
-  hittables.push_back(new Quad(vec3(-8.0, 12.0, 8.0), vec3(16, 0, 0), vec3(0, 0, 16), light_mat));
-  hittables.push_back(new Quad(vec3(-8.0, 12.0, -12.0), vec3(16, 0, 0), vec3(0, 0, 16), light_mat));
-  // hittables.push_back(new Quad(vec3(-28.0, 12.0, -12.0), vec3(16, 0, 0), vec3(0, 0, 16), light_mat));
-  // hittables.push_back(new Quad(vec3(12.0, 12.0, -12.0), vec3(16, 0, 0), vec3(0, 0, 16), light_mat));
-  hittables.push_back(new Quad(vec3(-8.0, 12.0, -32.0), vec3(16, 0, 0), vec3(0, 0, 16), light_mat));
+  // Quads for ceiling lights
+  scene.push_back(new Quad(vec3(-8.0, 12.0, 8.0), vec3(16, 0, 0), vec3(0, 0, 16), light_mat));
+  scene.push_back(new Quad(vec3(-8.0, 12.0, -12.0), vec3(16, 0, 0), vec3(0, 0, 16), light_mat));
+  scene.push_back(new Quad(vec3(-8.0, 12.0, -32.0), vec3(16, 0, 0), vec3(0, 0, 16), light_mat));
 
   //     Load OBJ file (if provided) and create HittableList
 
@@ -140,10 +139,7 @@ int main(int argc, char *argv[])
       return 1;
     }
 
-    for (Hittable *h : obj.objects)
-    {
-      hittables.push_back(h);
-    }
+    scene.push_back(new HittableList(std::move(obj)));
   }
   else if (argc > 2)
   {
@@ -151,30 +147,21 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  for (const auto &hittable : hittables)
+  for (const auto &hittable : scene)
   {
     hittable->bounding_box = hittable->getBoundingBox();
   }
 
-  // Build a BVH tree from the hittables vector
-  bvh_node *root = new bvh_node(hittables.data(), 0, hittables.size());
+  // Build a BVH tree from the scene vector
+  bvh_node *root = new bvh_node(scene.data(), 0, scene.size());
 
-  // Cleanup the raw pointers in hittables (BVH will manage them)
-  for (auto &hittable : hittables)
+  // Cleanup the raw pointers in scene (BVH will manage them)
+  for (auto &hittable : scene)
   {
     // Don't delete objects in the vector, because they're managed by the BVH now
     hittable = nullptr;
   }
 
-  vec3 camera_position(0.0, 4.0, 12.0);
-  vec3 look_at(0.0, 0.0, -1.0); // Looking towards the negative Z axis
-  vec3 up(0.0, -1.0, 0.0);      // this should be negative 1
-  double fov = 65.0;
-  int samples = 120;
-
-  // Set image width and height
-  int image_width = IW;
-  double aspectRatio = 16.0 / 9.0;
   Camera c(image_width, aspectRatio, camera_position, look_at, up, fov, samples, root);
   c.render();
 

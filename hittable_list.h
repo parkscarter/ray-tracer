@@ -4,6 +4,7 @@
 #include "hittable.h"
 #include "triangle.h"
 #include "sphere.h"
+#include "bvh.h"
 #include <vector>
 #include <iostream>
 #include <stdio.h>
@@ -16,6 +17,8 @@ public:
   // List to hold multiple Hittable objects (either Triangles, Spheres, etc.)
   std::vector<Hittable *> objects;
   material *mat;
+  AABB bbox;
+  bvh_node *local_bvh = nullptr;
 
   // Constructor that initializes the list with reflectivity
   // HittableList(double reflectivity = 0.0) : Hittable(reflectivity) {}
@@ -29,43 +32,52 @@ public:
   // Override the hit() method to check intersection with all objects in the list
   bool hit(const ray &r, double t_min, double t_max, hit_record &rec) const override
   {
-    std::cout << "HIT OBJECT LIST" << std::endl;
-    double closest_hit = std::numeric_limits<double>::infinity(); // Start with a very large value
-    for (const auto &obj : objects)
+    if (!getBoundingBox().hit(r, t_min, t_max))
     {
-      hit_record h;
-      obj->hit(r, t_min, t_max, h); // Check if the ray hits this objecta
-      double t = h.t;
-      if (t > 0 && t < closest_hit) // If the hit is closer than the current closest hit
-      {
-        closest_hit = t;
-        rec.normal = h.normal;
-        rec.p = h.p;
-        rec.t = h.t;
-        rec.mat = mat;
-      }
+      return false; // Early exit if ray misses the overall AABB
     }
+    // std::cout << "HIT OBJECT LIST" << std::endl;
+    // double closest_hit = std::numeric_limits<double>::infinity(); // Start with a very large value
+    // for (const auto &obj : objects)
+    // {
+    //   hit_record h;
+    //   obj->hit(r, t_min, t_max, h); // Check if the ray hits this objecta
+    //   double t = h.t;
+    //   if (t > 0 && t < closest_hit) // If the hit is closer than the current closest hit
+    //   {
+    //     closest_hit = t;
+    //     rec.normal = h.normal;
+    //     rec.p = h.p;
+    //     rec.t = h.t;
+    //     rec.mat = mat;
+    //   }
+    //}
 
     // If closest_hit hasn't been updated, return -1 (no intersection)
-    return (closest_hit == std::numeric_limits<double>::infinity()) ? false : true;
+    // return (closest_hit == std::numeric_limits<double>::infinity()) ? false : true;
+    return local_bvh && local_bvh->hit(r, t_min, t_max, rec);
+  }
+
+  void
+  computeBoundingBox()
+  {
+    if (objects.empty())
+    {
+      bbox = AABB(vec3(0, 0, 0), vec3(0, 0, 0)); // or mark as invalid
+      return;
+    }
+
+    bbox = objects[0]->getBoundingBox();
+    for (size_t i = 1; i < objects.size(); ++i)
+    {
+      bbox = AABB::combine(bbox, objects[i]->getBoundingBox());
+    }
   }
 
   // Override the getBoundingBox() method to compute the bounding box for all objects in the list
   AABB getBoundingBox() const override
   {
-    if (objects.empty())
-    {
-      return AABB(vec3(0, 0, 0), vec3(0, 0, 0)); // Return an invalid AABB if the list is empty
-    }
-
-    AABB box = objects[0]->getBoundingBox(); // Start with the bounding box of the first object
-    for (size_t i = 1; i < objects.size(); ++i)
-    {
-      AABB obj_box = objects[i]->getBoundingBox();
-      box = AABB::combine(box, obj_box); // Combine bounding boxes to get the union of all objects' bounding boxes
-    }
-
-    return box;
+    return bbox;
   }
 
   static HittableList load_triangles_from_obj(const std::string &filename, material *mat)
@@ -130,6 +142,9 @@ public:
     }
 
     file.close();
+
+    triangle_list.computeBoundingBox();
+    triangle_list.local_bvh = new bvh_node(triangle_list.objects.data(), 0, triangle_list.objects.size());
 
     return triangle_list; // Return the populated HittableList
   }
