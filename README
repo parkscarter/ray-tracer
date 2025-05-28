@@ -2,7 +2,7 @@
 
 A physically-based ray tracer implemented in C++ featuring realistic lighting, materials, textures, and geometry rendering with BVH acceleration.
 
-![Rendered Image](../../../var/folders/1v/jbjwt2zn0g9ck_4dlmh3rztm0000gn/T/TemporaryItems/NSIRD_screencaptureui_7MoZTp/Screenshot%202025-05-28%20at%202.47.10%E2%80%AFPM.png)
+![Rendered Image](images/render_screenshot.png)
 
 ## Features
 
