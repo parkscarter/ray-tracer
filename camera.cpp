@@ -67,6 +67,7 @@ color Camera::ray_color(const ray &r, int depth) const
     color background;
 
     background.value = (white.value * (1.0 - a)) + (light_blue.value * a);
+    // return background;
     return black;
   }
 

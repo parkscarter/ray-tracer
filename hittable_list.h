@@ -36,25 +36,6 @@ public:
     {
       return false; // Early exit if ray misses the overall AABB
     }
-    // std::cout << "HIT OBJECT LIST" << std::endl;
-    // double closest_hit = std::numeric_limits<double>::infinity(); // Start with a very large value
-    // for (const auto &obj : objects)
-    // {
-    //   hit_record h;
-    //   obj->hit(r, t_min, t_max, h); // Check if the ray hits this objecta
-    //   double t = h.t;
-    //   if (t > 0 && t < closest_hit) // If the hit is closer than the current closest hit
-    //   {
-    //     closest_hit = t;
-    //     rec.normal = h.normal;
-    //     rec.p = h.p;
-    //     rec.t = h.t;
-    //     rec.mat = mat;
-    //   }
-    //}
-
-    // If closest_hit hasn't been updated, return -1 (no intersection)
-    // return (closest_hit == std::numeric_limits<double>::infinity()) ? false : true;
     return local_bvh && local_bvh->hit(r, t_min, t_max, rec);
   }
 
