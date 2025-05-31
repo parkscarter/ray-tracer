@@ -25,6 +25,33 @@ public:
         std::pow(value.z, 1.0 / gamma));
   }
 
+  static color hsv_to_rgb(double h, double s, double v)
+  {
+    int i = static_cast<int>(h * 6);
+    double f = h * 6 - i;
+    double p = v * (1 - s);
+    double q = v * (1 - f * s);
+    double t = v * (1 - (1 - f) * s);
+
+    switch (i % 6)
+    {
+    case 0:
+      return color(v, t, p);
+    case 1:
+      return color(q, v, p);
+    case 2:
+      return color(p, v, t);
+    case 3:
+      return color(p, q, v);
+    case 4:
+      return color(t, p, v);
+    case 5:
+      return color(v, p, q);
+    default:
+      return color(1, 0, 1); // fallback magenta
+    }
+  }
+
   void write_to_file(FILE *out) const
   {
     double min_intensity = 0.0;

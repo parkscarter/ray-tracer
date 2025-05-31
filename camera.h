@@ -12,13 +12,17 @@
 #include <vector>
 #include <stdio.h>
 #include <limits>
+#include <thread>
+#include <mutex>
+#include <chrono>
+#include <atomic>
 
 #define MAX_BOUNCES 20
 
 class Camera
 {
 public:
-  Camera(int width, double a_ratio, vec3 center, vec3 look_at, vec3 up, double fov, int samples, bvh_node *scene_root);
+  Camera(int width, double a_ratio, vec3 center, vec3 look_at, vec3 up, double fov, int samples, int background_color, bvh_node *scene_root);
 
   color ray_color(const ray &r, int depth = MAX_BOUNCES) const;
   ray get_ray(int i, int j) const;
@@ -29,7 +33,7 @@ private:
   int image_width;
   int image_height;
 
-  color background;
+  int background_mode;
 
   Point center; // Camera center
   vec3 forward; // Direction the camera is facing (viewing direction)

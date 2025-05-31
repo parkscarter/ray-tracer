@@ -34,27 +34,53 @@
 // command to compile:
 //  g++ -std=c++14 project.cpp camera.cpp scene_setup.cpp rtw_stb_image.cpp -o ray-tracer
 
-#define IW 480 // image width 240, 480, 960, 1920, 3840
+#define IW 960 // image width 240, 480, 960, 1920, 3840
 int main(int argc, char *argv[])
 {
-  // Define Camera
-  vec3 camera_position(0.0, 4.0, 12.0);
-  vec3 look_at(0.0, 0.0, -1.0); // Looking towards the negative Z axis
-  vec3 up(0.0, -1.0, 0.0);      // this should be negative 1
-  double fov = 65.0;
-  int samples = 200;
-
-  // Set image width and height
+  // Define camera quality: Higher => Nicer image but longer run-time
+  int samples = 100;
   int image_width = IW;
-  double aspectRatio = 16.0 / 9.0;
+
+  CameraConfig cam_config;
 
   std::vector<Hittable *> scene;
   std::vector<std::unique_ptr<material>> materials;
   std::vector<std::unique_ptr<texture>> textures;
 
-  bvh_node *root = setup_scene(materials, textures);
+  int scene_number = 1; // Default to 1
+  if (argc >= 2)
+  {
+    try
+    {
+      scene_number = std::stoi(argv[1]);
+    }
+    catch (...)
+    {
+      std::cerr << "Invalid scene number. Using default scene 1." << std::endl;
+    }
+  }
 
-  Camera c(image_width, aspectRatio, camera_position, look_at, up, fov, samples, root);
+  bvh_node *root = nullptr;
+
+  switch (scene_number)
+  {
+  case 1:
+    root = setup_scene_1(materials, textures, cam_config);
+    break;
+  case 2:
+    root = setup_scene_2(materials, textures, cam_config);
+    break;
+  case 3:
+    root = setup_scene_3(materials, textures, cam_config);
+    break;
+  default:
+    std::cerr << "Unknown scene number: " << scene_number << ". Using default scene 1." << std::endl;
+    root = setup_scene_1(materials, textures, cam_config);
+    break;
+  }
+
+  Camera c(image_width, cam_config.aspect_ratio, cam_config.position, cam_config.look_at,
+           cam_config.up, cam_config.fov, samples, cam_config.background_color, root);
   c.render();
 
   return 0;

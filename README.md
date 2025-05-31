@@ -26,9 +26,9 @@ A physically-based ray tracer implemented in C++ featuring realistic lighting, m
 - **OBJ File Loading**: Import complex 3D models from OBJ file and renders trianlge mesh
 
 ### ⚡ **Performance Optimization**
+- **Multi-Threading**: Leverages multithreading (via C++ threads) to utilize open CPU cores for faster generation
 - **BVH (Bounding Volume Hierarchy)**: Efficient ray-object intersection acceleration
 - **AABB (Axis-Aligned Bounding Boxes)**: Fast spatial partitioning
-- **Multi-sampling**: Configurable anti-aliasing with samples per pixel
 
 ### 🔍 **Advanced Ray Tracing Features**
 - **Recursive Ray Bounces**: Realistic light transport with configurable depth
@@ -41,6 +41,13 @@ A physically-based ray tracer implemented in C++ featuring realistic lighting, m
 - **Field of View**: Adjustable perspective
 - **Aspect Ratio Support**: Configurable output dimensions
 - **Look-at System**: Intuitive camera aiming
+
+### 🎬 Preset Scene Selection
+- Supports multiple preset scenes
+- Select scenes at runtime using a command-line number:
+- Create your own scenes in `scene_setup.cpp`
+
+![Rendered Image](images/cow_render.png)
 
 ## Getting Started
 
@@ -55,12 +62,11 @@ g++ -std=c++11 project.cpp camera.cpp rtw_stb_image.cpp -o raytracer
 
 ### Basic Usage
 ```bash
-# Render the default scene
-./raytracer teapot.obj
+  # Render the default scene
+  ./raytracer 1
 
-# Render with a custom OBJ model
-./raytracer model.obj
-```
+  #Render second preset scene
+  ./raytracer 2
 
 The program will output a PPM image file named `output.ppm`.
 
@@ -83,23 +89,25 @@ diffuse_light *light_mat = new diffuse_light(&light_texture); // Light source
 hittables.push_back(new Sphere(vec3(0.0, 0.8, 6.0), 0.8, basketball_mat));
 hittables.push_back(new Sphere(vec3(4.5, 1.8, 4.0), 1.8, glass_mat));
 
-// Add quad lights
+// Add quads with any materials
 hittables.push_back(new Quad(vec3(-8.0, 12.0, 8.0), vec3(16, 0, 0), vec3(0, 0, 16), light_mat));
 ```
 
 ### Camera Settings
 ```cpp
-vec3 camera_position(0.0, 4.0, 12.0);
-vec3 look_at(0.0, 0.0, -1.0);
-vec3 up(0.0, -1.0, 0.0);
-double fov = 65.0;
-int samples = 120;  // Higher = better quality, slower render
+  cam_config.position = vec3(0.0, 8.0, 25.0);
+  cam_config.look_at = vec3(0.0, 0.0, -1.0);
+  cam_config.up = vec3(0.0, -1.0, 0.0);
+  cam_config.fov = 65.0;
+  cam_config.aspect_ratio = 3.0 / 2.0;
+  cam_config.background_color = 1;
 ```
 
 ## File Structure
 
 - **`project.cpp`** - Main program and scene setup
 - **`camera.h/cpp`** - Camera implementation and rendering pipeline
+- **`scene_setup.h/cpp`** - Defines camera configuration, textures, materials, and objects in scene
 - **`ray.h`** - Ray class with reflection/refraction utilities
 - **`vec3.h`** - 3D vector mathematics 
 - **`color.h`** - Color handling with gamma correction
@@ -118,15 +126,14 @@ int samples = 120;  // Higher = better quality, slower render
 ## Supported Texture Files
 
 Place texture files in the images directory:
-- `earth.jpg` - Earth texture for planetary rendering
-- `wall.jpg` - Wall texture
-- `basketball-ball.jpg` - Basketball texture
+- Already populated with textures used in preset scenes
 - Any JPG files for image textures
 
 ## Performance Notes
 
 The ray tracer includes several optimizations:
 - **BVH Acceleration**: Logarithmic intersection testing for complex scenes
+- **Multi-Threading**: Leverages multithreading (via C++ threads) to utilize open CPU cores for faster generation
 - **Configurable Quality**: Adjust `samples_per_pixel` vs render time
 - **Image Resolution**: Modify `IW` constant in `project.cpp` (240, 480, 960, 1920, 3840)
 
@@ -137,14 +144,14 @@ The ray tracer includes several optimizations:
 
 ## Example Scenes
 
-The default scene includes:
+The default scenes include all features:
 - Textured Earth sphere with image mapping
-- Glass sphere with realistic refraction
+- Glass spheres with realistic refraction
 - Metal spheres with varying fuzziness
 - Procedural noise textures
-- Checkered ground plane
+- Checkered textures
 - Area lights for realistic illumination
-- Optional OBJ model loading
+- OBJ model loading
 
 ## Known Issues
 

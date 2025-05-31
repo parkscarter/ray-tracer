@@ -1,10 +1,11 @@
 #include "camera.h"
 
-Camera::Camera(int width, double a_ratio, vec3 center, vec3 look_at, vec3 up, double fov, int samples, bvh_node *scene_root)
+Camera::Camera(int width, double a_ratio, vec3 center, vec3 look_at, vec3 up, double fov, int samples, int background_color, bvh_node *scene_root)
     : aspect_ratio(a_ratio),
       image_width(width),
       center(center),
       fov(fov),
+      background_mode(background_color),
       scene_root(scene_root),
       samples_per_pixel(samples)
 {
@@ -18,7 +19,6 @@ Camera::Camera(int width, double a_ratio, vec3 center, vec3 look_at, vec3 up, do
   up_normalized = vec3::cross(forward, right);
   up_normalized = vec3::unit_vector(up_normalized);
   up = up_normalized;
-  background = color(0.70, 0.80, 1.00);
 
   // Calculate the viewport based on field of view
   double focal_length = 1.0;                                    // Typically, the focal length is 1 unit
@@ -58,17 +58,26 @@ color Camera::ray_color(const ray &r, int depth) const
 
   if (!scene_root->hit(r, t_min, t_max, h))
   {
-    vec3 unit_direction = vec3::unit_vector(r.direction);
-    double a = 0.5 * (unit_direction.y + 1.0);
-    color white(1.0, 1.0, 1.0);
-    color black(0.0, 0.0, 0.0);
-    color light_blue(0.1, 0.5, 1.0); // Light blue color
-
-    color background;
-
-    background.value = (white.value * (1.0 - a)) + (light_blue.value * a);
-    // return background;
-    return black;
+    if (background_mode == 1)
+    {
+      color background;
+      vec3 unit_direction = vec3::unit_vector(r.direction);
+      double a = 0.5 * (unit_direction.y + 1.0);
+      color white(1.0, 1.0, 1.0);
+      color light_blue(0.1, 0.5, 1.0); // Light blue color
+      background.value = (white.value * (1.0 - a)) + (light_blue.value * a);
+      return background;
+    }
+    else if (background_mode == 2)
+    {
+      color dark(0.005, 0.005, 0.005);
+      return dark;
+    }
+    else
+    {
+      color black(0.0, 0.0, 0.0);
+      return black;
+    }
   }
 
   ray scattered;
@@ -108,37 +117,80 @@ ray Camera::get_ray(int i, int j) const
 // to the output image.
 void Camera::render() const
 {
+  std::vector<std::vector<color>> image(image_height, std::vector<color>(image_width));
+  int thread_count = std::thread::hardware_concurrency();
+  std::vector<std::thread> threads;
+  std::atomic<int> lines_done(0);
+
+  // Progress monitor thread
+  std::thread progress_thread([&]()
+                              {
+    int last_reported = -1;
+    while (lines_done < image_height) {
+      int current = lines_done.load();
+      if (current != last_reported) {
+        std::cout << "Lines completed: " << current << " / " << image_height << "\r" << std::flush;
+        last_reported = current;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(50)); 
+    }
+    std::cout << "Lines completed: " << image_height << " / " << image_height << "\n"; });
+
+  // Worker threads
+  auto render_rows = [&](int start_row, int end_row)
+  {
+    for (int j = start_row; j < end_row; ++j)
+    {
+      for (int i = 0; i < image_width; ++i)
+      {
+        color pixel_color;
+        for (int sample = 0; sample < samples_per_pixel; ++sample)
+        {
+          ray r = get_ray(i, j);
+          color color_sample = ray_color(r, 50);
+          pixel_color.value = vec3::add(pixel_color.value, color_sample.value);
+        }
+        pixel_color.value = vec3::scale(pixel_color.value, 1.0 / samples_per_pixel);
+        image[j][i] = pixel_color;
+      }
+      ++lines_done;
+    }
+  };
+
+  int rows_per_thread = image_height / thread_count;
+  for (int t = 0; t < thread_count; ++t)
+  {
+    int start = t * rows_per_thread;
+    int end = (t == thread_count - 1) ? image_height : start + rows_per_thread;
+    threads.emplace_back(render_rows, start, end);
+  }
+
+  // Join worker threads
+  for (auto &t : threads)
+  {
+    t.join();
+  }
+
+  // Wait for progress thread
+  progress_thread.join();
+
+  // Write image to file
   FILE *image_file = fopen("output.ppm", "w");
   if (!image_file)
   {
-    fprintf(stderr, "Error: could not open output file.\n");
+    std::cerr << "Error: could not open output file.\n";
     return;
   }
-
-  // Write the header for the PPM file
   fprintf(image_file, "P3\n%d %d\n255\n", image_width, image_height);
-
-  for (int j = 0; j < image_height; j++)
+  for (int j = 0; j < image_height; ++j)
   {
-    std::cout << "Line: " << j << " written out of  " << image_height << std::endl;
-    for (int i = 0; i < image_width; i++)
+    for (int i = 0; i < image_width; ++i)
     {
-      color pixel_color;
-      for (int sample = 0; sample < samples_per_pixel; sample++)
-      {
-        ray r = get_ray(i, j);
-        color color_sample = ray_color(r, 50);
-        pixel_color.value = vec3::add(pixel_color.value, color_sample.value);
-      }
-
-      // Average over samples
-      pixel_color.value = vec3::scale(pixel_color.value, 1.0 / samples_per_pixel);
-      pixel_color.write_to_file(image_file);
+      image[j][i].write_to_file(image_file);
     }
   }
-
   fclose(image_file);
-  fprintf(stderr, "\nDone.\n");
+  std::cerr << "\nDone.\n";
 }
 
 vec3 Camera::sample_square() const
