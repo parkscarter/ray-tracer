@@ -52,7 +52,7 @@ A physically-based ray tracer implemented in C++ featuring realistic lighting, m
 ## Getting Started
 
 ### Prerequisites
-- C++11 compatible compiler (g++, clang++)
+- C++14 compatible compiler (g++, clang++)
 - STB Image library (included as `rtw_stb_image.h`)
 
 ### Compilation
