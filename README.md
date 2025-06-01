@@ -167,15 +167,6 @@ Potential improvements for the ray tracer:
 - Advanced lighting models (PBR)
 - GPU acceleration
 - Real-time preview
-- More primitive types (cylinders, torus, etc.)
-
-## Contributing
-
-This ray tracer demonstrates advanced computer graphics concepts including:
-- Monte Carlo path tracing
-- Physically-based materials
-- Spatial acceleration structures
-- Texture mapping and procedural generation
-- Advanced intersection algorithms
+- More primitive types (cylinders, prisms, etc.)
 
 Feel free to extend and modify for educational or personal projects!
