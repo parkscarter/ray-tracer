@@ -47,7 +47,7 @@ A physically-based ray tracer implemented in C++ featuring realistic lighting, m
 - Select scenes at runtime using a command-line number:
 - Create your own scenes in `scene_setup.cpp`
 
-![Rendered Image](images/cow_render.png)
+![Rendered Image](images/ball_scene.png)
 
 ## Getting Started
 
@@ -57,10 +57,11 @@ A physically-based ray tracer implemented in C++ featuring realistic lighting, m
 
 ### Compilation
 ```bash
-g++ -std=c++11 project.cpp camera.cpp rtw_stb_image.cpp -o raytracer
+g++ -std=c++14 project.cpp camera.cpp scene_setup.cpp rtw_stb_image.cpp -o ray-tracer
 ```
 
 ### Basic Usage
+- There are three preset scenes, you can render them like so:
 ```bash
   # Render the default scene
   ./raytracer 1
@@ -68,11 +69,13 @@ g++ -std=c++11 project.cpp camera.cpp rtw_stb_image.cpp -o raytracer
   #Render second preset scene
   ./raytracer 2
 
+  ...
+
 The program will output a PPM image file named `output.ppm`.
 
 ## Scene Configuration
 
-The main scene is configured in `project.cpp`. You can customize:
+The rendered scene is configured in `scene_setup.cpp`. You can customize:
 
 ### Materials
 ```cpp
@@ -86,11 +89,15 @@ diffuse_light *light_mat = new diffuse_light(&light_texture); // Light source
 ### Geometry
 ```cpp
 // Add spheres with different materials
-hittables.push_back(new Sphere(vec3(0.0, 0.8, 6.0), 0.8, basketball_mat));
-hittables.push_back(new Sphere(vec3(4.5, 1.8, 4.0), 1.8, glass_mat));
+scene.push_back(new Sphere(vec3(0.0, 0.8, 6.0), 0.8, basketball_mat));
+scene.push_back(new Sphere(vec3(4.5, 1.8, 4.0), 1.8, glass_mat));
 
 // Add quads with any materials
-hittables.push_back(new Quad(vec3(-8.0, 12.0, 8.0), vec3(16, 0, 0), vec3(0, 0, 16), light_mat));
+scene.push_back(new Quad(vec3(-8.0, 12.0, 8.0), vec3(16, 0, 0), vec3(0, 0, 16), light_mat));
+
+// Add 3d Models from obj file as triangle mesh
+HittableList obj = HittableList::load_triangles_from_obj(obj_file, bronze_mat_ptr);
+scene.push_back(new HittableList(std::move(obj)));
 ```
 
 ### Camera Settings
@@ -102,6 +109,8 @@ hittables.push_back(new Quad(vec3(-8.0, 12.0, 8.0), vec3(16, 0, 0), vec3(0, 0, 1
   cam_config.aspect_ratio = 3.0 / 2.0;
   cam_config.background_color = 1;
 ```
+
+![Rendered Image](images/cow_render.png)
 
 ## File Structure
 
@@ -123,11 +132,15 @@ hittables.push_back(new Quad(vec3(-8.0, 12.0, 8.0), vec3(16, 0, 0), vec3(0, 0, 1
 - **`util.h`** - Utility functions 
 - **`perlin.h`** - Perlin noise implementation 
 
-## Supported Texture Files
+## Supported File Types
 
 Place texture files in the images directory:
 - Already populated with textures used in preset scenes
 - Any JPG files for image textures
+
+Place object files in the obj directory:
+- Already populated with models used in preset scenes
+- Obj files representing triangle meshes
 
 ## Performance Notes
 
@@ -137,10 +150,11 @@ The ray tracer includes several optimizations:
 - **Configurable Quality**: Adjust `samples_per_pixel` vs render time
 - **Image Resolution**: Modify `IW` constant in `project.cpp` (240, 480, 960, 1920, 3840)
 
-### Render Quality Settings
+### Render Quality Settings (Set these in `project.cpp`)
 - **Fast Preview**: 10-30 samples, 480px width
 - **Production**: 100-500+ samples, 1920px+ width
 - **High Quality**: 1000+ samples for final renders
+  
 
 ## Example Scenes
 
